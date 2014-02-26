@@ -7,12 +7,12 @@ project(prac1)
 find_package(catkin REQUIRED COMPONENTS
   cv_bridge
   geometry_msgs
-  image_transport
-  opencv2
   roscpp
-  sensor_msgs
-)
+sensor_msgs
+image_transport
 
+)
+find_package(OpenCV)
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
@@ -70,7 +70,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate added messages and services with any dependencies listed here
 # generate_messages(
 #   DEPENDENCIES
-#   geometry_msgs#   sensor_msgs
+#   geometry_msgs
 # )
 
 ###################################
@@ -85,7 +85,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES prac1
-#  CATKIN_DEPENDS cv_bridge geometry_msgs image_transport opencv2 roscpp sensor_msgs
+#  CATKIN_DEPENDS cv_bridge geometry_msgs roscpp
 #  DEPENDS system_lib
 )
 
@@ -164,3 +164,9 @@ include_directories(
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+
+add_executable(${PROJECT_NAME} src/prac1.cpp)
+
+target_link_libraries(${PROJECT_NAME}
+   ${catkin_LIBRARIES}
+)
