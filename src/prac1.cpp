@@ -12,12 +12,17 @@ using namespace std;
 
 namespace enc = sensor_msgs::image_encodings; 
 
+cv_bridge::CvImagePtr img1;
+cv_bridge::CvImagePtr img2;
+bool img1_exist = false;
+bool img2_exist = false;
+
 class Prac1 {
 	ros::Subscriber imgSub;
 	
 	public:Prac1(ros::NodeHandle& nh) { 
 		
-		imgSub = nh.subscribe("/camera/rgb/image_color", 1, &Prac1::imageCb, this);
+		imgSub = nh.subscribe("/camera/rgb/image_color", 1, &Prac1::imageCbFast, this);
 	};
 
 
@@ -84,7 +89,7 @@ class Prac1 {
 		 //dibujamos la imagen dst_norm_scaled en la ventana
 		  imshow( "Corners detected", dst_norm_scaled );
 
-		cv::waitKey(3);
+		cv::waitKey(3);	
 
 	}
 
@@ -93,6 +98,7 @@ class Prac1 {
 
 void imageCbFast(const sensor_msgs::ImageConstPtr& msg)
   {
+
     cv_bridge::CvImagePtr cv_ptr;
     try
     {
@@ -105,30 +111,67 @@ void imageCbFast(const sensor_msgs::ImageConstPtr& msg)
     }
     std::cerr<<" imagecb: "<<msg->header.frame_id<<" : "<<msg->header.seq<<" : "<<msg->header.stamp<<std::endl;
 
- Mat src_gray;
-
- cvtColor( cv_ptr->image, src_gray, CV_BGR2GRAY );
-
-   Ptr<FeatureDetector> detector = FeatureDetector::create("FAST");
-    vector<KeyPoint> points;
-    detector->detect(src_gray, points);
-
-
-    Mat imageColor;
-    cvtColor(src_gray, imageColor, CV_GRAY2BGR);
-    
-    for (size_t i = 0; i < points.size(); i++)
+    if(!img1_exist)
     {
-      circle(imageColor, points[i].pt, 3, CV_RGB(255, 0, 0));
+    	img1 = cv_ptr;
+    	img1_exist = true;
     }
-    //se pueden pintar tambien con esta funcion
-    //drawKeypoints(imageColor, points, imageColor, Scalar(255, 0, 0), DrawMatchesFlags::DRAW_OVER_OUTIMG);
+    else if(!img2_exist)
+    {
+    	img2 = cv_ptr;
+    	img2_exist = true;
+    }
+    else
+    {
+	  	Mat src_gray1;
+	  	Mat src_gray2;
 
-    imshow("Fast keypoints", imageColor);
+	 	cvtColor( img1->image, src_gray1, CV_BGR2GRAY );
+	 	cvtColor( img2->image, src_gray2, CV_BGR2GRAY );
 
-    
-    cv::waitKey(3);
-    
+	   	Ptr<FeatureDetector> detector = FeatureDetector::create("SIFT");
+	    vector<KeyPoint> points1;
+	    vector<KeyPoint> points2;
+	    detector->detect(src_gray1, points1);
+	    detector->detect(src_gray2, points2);
+
+	    /*Extraer descriptores*/
+	    Mat descriptors_1, descriptors_2;
+	    Ptr<DescriptorExtractor> extractor = DescriptorExtractor::create("SIFT");
+      	extractor->compute( src_gray1, points1, descriptors_1 );
+  		extractor->compute( src_gray2, points2, descriptors_2 );
+
+  		/*Matcher*/
+  		FlannBasedMatcher matcher;
+	  	std::vector< DMatch > matches;
+	  	matcher.match( descriptors_1, descriptors_2, matches );
+
+	  	Mat img_matches;
+  		drawMatches( src_gray1, points1, src_gray2, points2,
+               matches, img_matches, Scalar::all(-1), Scalar::all(-1),
+               vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
+
+	    /*Mat imageColor1;
+	    Mat imageColor2;
+	    cvtColor(src_gray1, imageColor1, CV_GRAY2BGR);
+	    cvtColor(src_gray2, imageColor2, CV_GRAY2BGR);
+	    
+	    for (size_t i = 0; i < points1.size(); i++)
+	    {
+	      circle(imageColor1, points1[i].pt, 3, CV_RGB(255, 0, 0));
+	    }
+
+	    for (size_t i = 0; i < points2.size(); i++)
+	    {
+	      circle(imageColor2, points2[i].pt, 3, CV_RGB(255, 0, 0));
+	    }*/
+	    //se pueden pintar tambien con esta funcion
+	    //drawKeypoints(imageColor, points, imageColor, Scalar(255, 0, 0), DrawMatchesFlags::DRAW_OVER_OUTIMG);
+
+	    imshow("SIFT keypoints", img_matches);
+	    
+	    cv::waitKey(3);   	
+    }
   }
 };
 
