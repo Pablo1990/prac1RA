@@ -144,13 +144,46 @@ void imageCbFast(const sensor_msgs::ImageConstPtr& msg)
   		/*Matcher*/
   		/*FlannBasedMatcher matcher;*/
 	  	vector<vector<DMatch> > matches;
+	  	/* Tipos: BruteForce (it uses L2 ), BruteForce-L1, BruteForce-Hamming, BruteForce-Hamming(2), FlannBased */
 	  	Ptr<DescriptorMatcher> descriptorMatcher = DescriptorMatcher::create( "FlannBased" );
 
   		descriptorMatcher->knnMatch( descriptors_1, descriptors_2, matches, 2);
 
+  		vector<DMatch> better_matches;
+  			cout<<"hola2"<<endl;
+  		for (int i=0; i<descriptors_1.rows; i++){
+  			cout<<"hola"<<endl;
+  			//std::cout<<matches[i].size;
+  			if(matches[i][0].distance>(matches[i][1].distance*0.8))
+  				better_matches.push_back(matches[i][0]);
+  		}
+
+  		/*double max_dist = 0; double min_dist = 100;
+
+		  //-- Quick calculation of max and min distances between keypoints
+		  for( int i = 0; i < descriptors_1.rows; i++ )
+		  { double dist = better_matches[i].distance;
+		    if( dist < min_dist ) min_dist = dist;
+		    if( dist > max_dist ) max_dist = dist;
+		  }
+
+		  printf("-- Max dist : %f \n", max_dist );
+		  printf("-- Min dist : %f \n", min_dist );
+
+		  //-- Draw only "good" matches (i.e. whose distance is less than 2*min_dist,
+		  //-- or a small arbitary value ( 0.02 ) in the event that min_dist is very
+		  //-- small)
+		  //-- PS.- radiusMatch can also be used here.
+		  std::vector< DMatch > good_matches;
+
+		  for( int i = 0; i < descriptors_1.rows; i++ )
+		  { if(better_matches[i].distance <= max(2*min_dist, 0.02) )
+		    { good_matches.push_back( better_matches[i]); }
+		  }
+		*/
 	  	Mat img_matches;
   		drawMatches( src_gray1, points1, src_gray2, points2,
-               matches[0], img_matches, Scalar::all(-1), Scalar::all(-1),
+               better_matches, img_matches, Scalar::all(-1), Scalar::all(-1),
                vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
 
 	    /*Mat imageColor1;
