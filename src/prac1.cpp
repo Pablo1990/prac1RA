@@ -142,13 +142,15 @@ void imageCbFast(const sensor_msgs::ImageConstPtr& msg)
   		extractor->compute( src_gray2, points2, descriptors_2 );
 
   		/*Matcher*/
-  		FlannBasedMatcher matcher;
-	  	std::vector< DMatch > matches;
-	  	matcher.match( descriptors_1, descriptors_2, matches );
+  		/*FlannBasedMatcher matcher;*/
+	  	vector<vector<DMatch> > matches;
+	  	Ptr<DescriptorMatcher> descriptorMatcher = DescriptorMatcher::create( "FlannBased" );
+
+  		descriptorMatcher->knnMatch( descriptors_1, descriptors_2, matches, 2);
 
 	  	Mat img_matches;
   		drawMatches( src_gray1, points1, src_gray2, points2,
-               matches, img_matches, Scalar::all(-1), Scalar::all(-1),
+               matches[0], img_matches, Scalar::all(-1), Scalar::all(-1),
                vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
 
 	    /*Mat imageColor1;
