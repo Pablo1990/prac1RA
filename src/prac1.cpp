@@ -158,12 +158,12 @@ void imageCbFast(const sensor_msgs::ImageConstPtr& msg)
   		vector<DMatch> better_matches;
   		for (int i=0; i<descriptors_1.rows; i++){
   			//std::cout<<matches[i].size;
-  			if(matches[i][0].distance<(matches[i][1].distance*0.5)){
+  			if(matches[i][0].distance>(matches[i][1].distance*0.8)){
   				better_matches.push_back(matches[i][0]);
   			}
   		}
 
-  		/*double max_dist = 0; double min_dist = 100;
+  		double max_dist = 0; double min_dist = 100;
 
 		  //-- Quick calculation of max and min distances between keypoints
 		  for( int i = 0; i < descriptors_1.rows; i++ )
@@ -180,27 +180,27 @@ void imageCbFast(const sensor_msgs::ImageConstPtr& msg)
 		  //-- small)
 		  //-- PS.- radiusMatch can also be used here.
 		  std::vector< DMatch > good_matches;
-
 		  for( int i = 0; i < descriptors_1.rows; i++ )
 		  { if(better_matches[i].distance <= max(2*min_dist, 0.02) )
 		    { good_matches.push_back( better_matches[i]); }
 		  }
-		*/
+		
+		  cout<<good_matches.size()<<endl;
 
 	  	Mat img_matches;
   		drawMatches( src_gray1, points1, src_gray2, points2,
-               better_matches, img_matches, Scalar::all(-1), Scalar::all(-1),
+               good_matches, img_matches, Scalar::all(-1), Scalar::all(-1),
                vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
 
 		  //-- Localize the object
 		  std::vector<Point2f> scena1;
 		  std::vector<Point2f> scene2;
 
-		  for( int i = 0; i < better_matches.size(); i++ )
+		  for( int i = 0; i < good_matches.size(); i++ )
 		  {
 		    //-- Get the keypoints from the good matches
-		    scena1.push_back( points1[ better_matches[i].queryIdx ].pt );
-		    scene2.push_back( points2[ better_matches[i].trainIdx ].pt );
+		    scena1.push_back( points1[ good_matches[i].queryIdx ].pt );
+		    scene2.push_back( points2[ good_matches[i].trainIdx ].pt );
 		  }
 
 		  Mat H = findHomography( scena1, scene2, CV_RANSAC );
@@ -239,7 +239,49 @@ void imageCbFast(const sensor_msgs::ImageConstPtr& msg)
 	    //se pueden pintar tambien con esta funcion
 	    //drawKeypoints(imageColor, points, imageColor, Scalar(255, 0, 0), DrawMatchesFlags::DRAW_OVER_OUTIMG);
 
-	    imshow("SIFT keypoints", img_matches);
+	    //imshow("SIFT keypoints", img_matches);
+	      const std::vector<Point2f> points_ant_transformed(points1.size());
+std::vector<Point2f> keypoints_ant_vector(points1.size());
+cv::KeyPoint::convert(points1,keypoints_ant_vector);
+
+//transformamos los puntos de la imagen anterior
+perspectiveTransform( keypoints_ant_vector, points_ant_transformed, H);
+
+//creamos una copia de la imagen actual que usaremos para dibujar
+Mat transformed_image;
+cvtColor(src_gray1, transformed_image, CV_GRAY2BGR);
+
+//los que esten mas lejos que este parametro se consideran outliers (o que la transformacion está mal calculada)
+//este valor es orientativo, podeis cambiarlo y ajustarlo a los valores
+float distance_threshold=10.0; 
+int contdrawbuenos=0;
+int contdrawmalos=0;
+for ( int i =0;i<better_matches.size();i++)
+{
+    int ind        = better_matches.at(i).trainIdx ;
+    int ind_Ant    = better_matches.at(i).queryIdx;
+
+    cv::Point2f p=        points1.at(ind).pt;
+    cv::Point2f p_ant=    points_ant_transformed[ind_Ant];
+
+    circle( transformed_image, p_ant, 5, Scalar(255,0,0), 2, 8, 0 ); //ant blue
+    circle( transformed_image, p, 5, Scalar(0,255,255), 2, 8, 0 ); //current yellow
+
+    Point pointdiff = p - points_ant_transformed[ind_Ant];
+        float distance_of_points=cv::sqrt(pointdiff.x*pointdiff.x + pointdiff.y*pointdiff.y);
+
+    if(distance_of_points < distance_threshold){ // los good matches se pintan con un circulo verde mas grand
+        contdrawbuenos++;
+        circle( transformed_image, p, 9, Scalar(0,255,0), 2, 8, 0 ); //current red
+    }
+    else{
+        contdrawmalos++;
+        line(transformed_image,p,p_ant,Scalar(0, 0, 255),1,CV_AA);
+    }
+}
+
+imshow( "transformed", transformed_image );
+imwrite("/home/ejemplowrite.png",transformed_image );
 	    
 	    cv::waitKey(3);   	
     }
