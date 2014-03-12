@@ -129,32 +129,33 @@ void imageCbFast(const sensor_msgs::ImageConstPtr& msg)
 	 	cvtColor( img1->image, src_gray1, CV_BGR2GRAY );
 	 	cvtColor( img2->image, src_gray2, CV_BGR2GRAY );
 
-	   	Ptr<FeatureDetector> detector = FeatureDetector::create("SIFT");
+	   	/*Ptr<FeatureDetector> detector = FeatureDetector::create("SIFT");*/
+	   	SiftFeatureDetector detector;
 	    vector<KeyPoint> points1;
 	    vector<KeyPoint> points2;
-	    detector->detect(src_gray1, points1);
-	    detector->detect(src_gray2, points2);
+	    detector.detect(src_gray1, points1);
+	    detector.detect(src_gray2, points2);
 
 	    /*Extraer descriptores*/
 	    Mat descriptors_1, descriptors_2;
-	    Ptr<DescriptorExtractor> extractor = DescriptorExtractor::create("SIFT");
-      	extractor->compute( src_gray1, points1, descriptors_1 );
-  		extractor->compute( src_gray2, points2, descriptors_2 );
+	    //Ptr<DescriptorExtractor> extractor = DescriptorExtractor::create("SIFT");
+	    SiftDescriptorExtractor extractor;
+      	extractor.compute( src_gray1, points1, descriptors_1 );
+  		extractor.compute( src_gray2, points2, descriptors_2 );
 
   		/*Matcher*/
   		/*FlannBasedMatcher matcher;*/
 	  	vector<vector<DMatch> > matches;
 	  	/* Tipos: BruteForce (it uses L2 ), BruteForce-L1, BruteForce-Hamming, BruteForce-Hamming(2), FlannBased */
-	  	Ptr<DescriptorMatcher> descriptorMatcher = DescriptorMatcher::create( "FlannBased" );
+	  	//Ptr<DescriptorMatcher> descriptorMatcher = DescriptorMatcher::create( "FlannBased" );
+	  	FlannBasedMatcher descriptorMatcher;
 
-  		descriptorMatcher->knnMatch( descriptors_1, descriptors_2, matches, 2);
+  		descriptorMatcher.knnMatch( descriptors_1, descriptors_2, matches, 2);
 
   		vector<DMatch> better_matches;
-  			cout<<"hola2"<<endl;
   		for (int i=0; i<descriptors_1.rows; i++){
-  			cout<<"hola"<<endl;
   			//std::cout<<matches[i].size;
-  			if(matches[i][0].distance>(matches[i][1].distance*0.8))
+  			if(matches[i][0].distance<(matches[i][1].distance*0.8))
   				better_matches.push_back(matches[i][0]);
   		}
 
