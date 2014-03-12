@@ -6,6 +6,9 @@
 #include <opencv2/features2d/features2d.hpp>
 #include "opencv2/nonfree/nonfree.hpp"
 #include <opencv2/imgproc/imgproc.hpp>
+#include "opencv2/core/core.hpp"
+#include "opencv2/calib3d/calib3d.hpp"
+#include "opencv2/nonfree/nonfree.hpp"
 
 using namespace cv;
 using namespace std;
@@ -155,8 +158,9 @@ void imageCbFast(const sensor_msgs::ImageConstPtr& msg)
   		vector<DMatch> better_matches;
   		for (int i=0; i<descriptors_1.rows; i++){
   			//std::cout<<matches[i].size;
-  			if(matches[i][0].distance<(matches[i][1].distance*0.8))
+  			if(matches[i][0].distance<(matches[i][1].distance*0.5)){
   				better_matches.push_back(matches[i][0]);
+  			}
   		}
 
   		/*double max_dist = 0; double min_dist = 100;
@@ -182,10 +186,41 @@ void imageCbFast(const sensor_msgs::ImageConstPtr& msg)
 		    { good_matches.push_back( better_matches[i]); }
 		  }
 		*/
+
 	  	Mat img_matches;
   		drawMatches( src_gray1, points1, src_gray2, points2,
                better_matches, img_matches, Scalar::all(-1), Scalar::all(-1),
                vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
+
+		  //-- Localize the object
+		  std::vector<Point2f> scena1;
+		  std::vector<Point2f> scene2;
+
+		  for( int i = 0; i < better_matches.size(); i++ )
+		  {
+		    //-- Get the keypoints from the good matches
+		    scena1.push_back( points1[ better_matches[i].queryIdx ].pt );
+		    scene2.push_back( points2[ better_matches[i].trainIdx ].pt );
+		  }
+
+		  Mat H = findHomography( scena1, scene2, CV_RANSAC );
+
+		  //-- Get the corners from the image_1 ( the object to be "detected" )
+		  std::vector<Point2f> obj_corners(4);
+		  obj_corners[0] = cvPoint(0,0); obj_corners[1] = cvPoint( src_gray1.cols, 0 );
+		  obj_corners[2] = cvPoint( src_gray1.cols, src_gray1.rows ); obj_corners[3] = cvPoint( 0, src_gray1.rows );
+		  std::vector<Point2f> scene_corners(4);
+
+		  perspectiveTransform( obj_corners, scene_corners, H);
+
+		  //-- Draw lines between the corners (the mapped object in the scene - image_2 )
+		  line( img_matches, scene_corners[0] + Point2f( src_gray1.cols, 0), scene_corners[1] + Point2f( src_gray1.cols, 0), Scalar(0, 255, 0), 4 );
+		  line( img_matches, scene_corners[1] + Point2f( src_gray1.cols, 0), scene_corners[2] + Point2f( src_gray1.cols, 0), Scalar( 0, 255, 0), 4 );
+		  line( img_matches, scene_corners[2] + Point2f( src_gray1.cols, 0), scene_corners[3] + Point2f( src_gray1.cols, 0), Scalar( 0, 255, 0), 4 );
+		  line( img_matches, scene_corners[3] + Point2f( src_gray1.cols, 0), scene_corners[0] + Point2f( src_gray1.cols, 0), Scalar( 0, 255, 0), 4 );
+
+		  //-- Show detected matches
+		  imshow( "Good Matches & Object detection", img_matches );
 
 	    /*Mat imageColor1;
 	    Mat imageColor2;
