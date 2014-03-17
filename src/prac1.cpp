@@ -278,7 +278,13 @@
 	}
 
 	imshow( "transformed", transformed_image );
-	imwrite("/home/ejemplowrite.png",transformed_image );
+	imwrite("~/ejemplowrite.png",transformed_image );
+
+			cv::Mat result;
+			warpPerspective(src_gray1,result,H,cv::Size(src_gray1.cols+src_gray2.cols,src_gray1.rows));
+			cv::Mat half(result,cv::Rect(0,0,src_gray2.cols,src_gray2.rows));
+			src_gray2.copyTo(half);
+			imshow( "Easy Merge Result", result );
 		    
 		    cv::waitKey(3);   	
 	    }
