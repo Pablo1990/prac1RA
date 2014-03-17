@@ -17,8 +17,10 @@
 
 	cv_bridge::CvImagePtr img1;
 	cv_bridge::CvImagePtr img2;
+	int frame = 0;
 	bool img1_exist = false;
 	bool img2_exist = false;
+	bool img_result = false;
 
 	class Prac1 {
 		ros::Subscriber imgSub;
@@ -32,7 +34,7 @@
 		void bucle() {
 			ros::Rate rate(1); 
 			while (ros::ok()) {
-				cout<<imgSub<<endl;
+				//cout<<imgSub<<endl;
 				ros::spinOnce(); // Se procesarán todas las llamadas pendientes, es decir, llamará a callBack
 				rate.sleep(); // Espera a que finalice el ciclo
 			}
@@ -101,39 +103,61 @@
 
 	void imageCbFast(const sensor_msgs::ImageConstPtr& msg)
 	  {
-
-	    cv_bridge::CvImagePtr cv_ptr;
-	    try
-	    {
-	      cv_ptr = cv_bridge::toCvCopy(msg, enc::BGR8);
-	    }
-	    catch (cv_bridge::Exception& e)
-	    {
-	      ROS_ERROR("cv_bridge exception: %s", e.what());
-	      return;
-	    }
-	    std::cerr<<" imagecb: "<<msg->header.frame_id<<" : "<<msg->header.seq<<" : "<<msg->header.stamp<<std::endl;
+	    
 
 	    if(!img1_exist)
 	    {
+	    	std::cerr<<" imagecb: "<<msg->header.frame_id<<" : "<<msg->header.seq<<" : "<<msg->header.stamp<<std::endl;
+	    	cv_bridge::CvImagePtr cv_ptr;
+		    try
+		    {
+		      cv_ptr = cv_bridge::toCvCopy(msg, enc::BGR8);
+		    }
+		    catch (cv_bridge::Exception& e)
+		    {
+		      ROS_ERROR("cv_bridge exception: %s", e.what());
+		      return;
+		    }
 	    	img1 = cv_ptr;
+	    	frame = msg->header.seq;
 	    	img1_exist = true;
 	    }
 	    else if(!img2_exist)
 	    {
+	    	std::cerr<<" imagecb: "<<msg->header.frame_id<<" : "<<msg->header.seq<<" : "<<msg->header.stamp<<std::endl;
+	    	cv_bridge::CvImagePtr cv_ptr;
+		    try
+		    {
+		      cv_ptr = cv_bridge::toCvCopy(msg, enc::BGR8);
+		    }
+		    catch (cv_bridge::Exception& e)
+		    {
+		      ROS_ERROR("cv_bridge exception: %s", e.what());
+		      return;
+		    }
 	    	img2 = cv_ptr;
 	    	img2_exist = true;
 	    }
-	    else
+	    else if(img1_exist && img2_exist)
 	    {
+	    	img_result = true;
 		  	Mat src_gray1;
 		  	Mat src_gray2;
 
 		 	cvtColor( img1->image, src_gray1, CV_BGR2GRAY );
 		 	cvtColor( img2->image, src_gray2, CV_BGR2GRAY );
 
-		   	/*Ptr<FeatureDetector> detector = FeatureDetector::create("SIFT");*/
-		   	SiftFeatureDetector detector;
+
+		    int minHessian = 400;
+
+  			SurfFeatureDetector detector( minHessian );
+		   	//SiftFeatureDetector detector;
+		   	//FastFeatureDetector detector;
+		   	//GoodFeaturesToTrackDetector detector;
+		   	//MserFeatureDetector detector;
+		   	//StarFeatureDetector detector;
+		   	//DenseFeatureDetector detector;
+		   	//SimpleBlobDetector detector;
 		    vector<KeyPoint> points1;
 		    vector<KeyPoint> points2;
 		    detector.detect(src_gray1, points1);
@@ -141,8 +165,12 @@
 
 		    /*Extraer descriptores*/
 		    Mat descriptors_1, descriptors_2;
-		    //Ptr<DescriptorExtractor> extractor = DescriptorExtractor::create("SIFT");
-		    SiftDescriptorExtractor extractor;
+		    //SiftDescriptorExtractor extractor;
+		    SurfDescriptorExtractor extractor;
+		    //OrbDescriptorExtractor extractor;
+		    //CalonderDescriptorExtractor extractor;
+		    //OpponentColorDescriptorExtractor extractor;
+		    //BriefDescriptorExtractor extractor;
 	      	extractor.compute( src_gray1, points1, descriptors_1 );
 	  		extractor.compute( src_gray2, points2, descriptors_2 );
 
@@ -152,6 +180,8 @@
 		  	/* Tipos: BruteForce (it uses L2 ), BruteForce-L1, BruteForce-Hamming, BruteForce-Hamming(2), FlannBased */
 		  	//Ptr<DescriptorMatcher> descriptorMatcher = DescriptorMatcher::create( "FlannBased" );
 		  	FlannBasedMatcher descriptorMatcher;
+		  	//Param: NORM_L1, NORM_L2, NORM_HAMMING, NORM_HAMMING2
+		  	//BFMatcher descriptorMatcher(NORM_L1,false);
 
 	  		descriptorMatcher.knnMatch( descriptors_1, descriptors_2, matches, 2);
 
