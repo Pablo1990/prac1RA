@@ -187,7 +187,7 @@
 
 		  	Mat img_matches;
 	  		drawMatches( src_gray1, points1, src_gray2, points2, good_matches, img_matches, Scalar::all(-1), Scalar::all(-1),
-	               vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
+	               vector<char>(), DrawMatchesFlags::DRAW_RICH_KEYPOINTS  );
 
 			  //-- Localize the object
 			  std::vector<Point2f> scena1;
@@ -253,12 +253,12 @@
 	float distance_threshold=10.0; 
 	int contdrawbuenos=0;
 	int contdrawmalos=0;
-	for ( int i =0;i<better_matches.size();i++)
+	for ( int i =0;i<good_matches.size();i++)
 	{
-	    int ind        = better_matches.at(i).trainIdx ;
-	    int ind_Ant    = better_matches.at(i).queryIdx;
+	    int ind        = good_matches.at(i).trainIdx ;
+	    int ind_Ant    = good_matches.at(i).queryIdx;
 
-	    cv::Point2f p=        points1.at(ind).pt;
+	    cv::Point2f p=        points2.at(ind).pt;
 	    cv::Point2f p_ant=    points_ant_transformed[ind_Ant];
 
 	    circle( transformed_image, p_ant, 5, Scalar(255,0,0), 2, 8, 0 ); //ant blue
