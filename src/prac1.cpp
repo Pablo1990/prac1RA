@@ -130,14 +130,18 @@ class Prac1 {
 	  	//Ptr<DescriptorMatcher> descriptorMatcher = DescriptorMatcher::create( "FlannBased" );
 	  	//FlannBasedMatcher descriptorMatcher;
 	  	//Param: NORM_L1, NORM_L2, NORM_HAMMING, NORM_HAMMING2
+			//al parecer con NORM_L1 es con el que mejor funciona el surf
 			BFMatcher descriptorMatcher(NORM_L1,false);
-
+			//Capturamos las dos relaciones mas fuertes de 1 punto (sera con otro punto cada una)
 			descriptorMatcher.knnMatch( descriptors_1, descriptors_2, matches, 2);
 
+
+			/*------------------- Filtrado de matches ------------------------*/
+			//El primer filtrado es que el primer mejor matching sea menor
+			// que el segundo*0.8
 			vector<DMatch> better_matches;
 			for (int i=0; i<descriptors_1.rows; i++){
-  			//std::cout<<matches[i].size;
-				if(matches[i][0].distance>(matches[i][1].distance*0.8)){
+				if(matches[i][0].distance<(matches[i][1].distance*0.8)){
 					better_matches.push_back(matches[i][0]);
 				}
 			}
