@@ -146,121 +146,130 @@ class Prac1 {
 				}
 			}
 
+			//El segundo filtrado sera el valor de la distancia del
+			// mejor emparejamiento es menor que un umbral dado 
 			double max_dist = 0; double min_dist = 100;
 
-		  //-- Quick calculation of max and min distances between keypoints
+		  	//primero calculamos la distancia minima entre matches y la maxima
 			for( int i = 0; i < better_matches.size(); i++ )
 				{ double dist = better_matches[i].distance;
 					if( dist < min_dist ) min_dist = dist;
 					if( dist > max_dist ) max_dist = dist;
 				}
 
-				//printf("-- Max dist : %f \n", max_dist );
-				//printf("-- Min dist : %f \n", min_dist );
+			//printf("-- Max dist : %f \n", max_dist );
+			//printf("-- Min dist : %f \n", min_dist );
 
-		  //-- Draw only "good" matches (i.e. whose distance is less than 2*min_dist,
-		  //-- or a small arbitary value ( 0.02 ) in the event that min_dist is very
-		  //-- small)
-		  //-- PS.- radiusMatch can also be used here.
-				vector< DMatch > good_matches;
-				for( int i = 0; i < better_matches.size(); i++ )
-					{ if(better_matches[i].distance <= max(2*min_dist, 0.02) )
-						{ good_matches.push_back( better_matches[i]); }
-					}
+		  	//El umbral en este caso sera el maximo entre la min_distancia y
+		  	//0.02
+			vector< DMatch > good_matches;
+			for( int i = 0; i < better_matches.size(); i++ )
+			{ 
+				if(better_matches[i].distance <= max(2*min_dist, 0.02) )
+					good_matches.push_back( better_matches[i]);
+			}
 
-					Mat img_matches;
-					drawMatches( src_gray1, points1, src_gray2, points2, good_matches, img_matches, Scalar::all(-1), Scalar::all(-1),
+			Mat img_matches;
+			//Pintamos en img_matches los matches entre la primera imagen y la segunda
+			//tambien pintaremos esos keypoints detectados
+			drawMatches( src_gray1, points1, src_gray2, points2, good_matches, img_matches, Scalar::all(-1), Scalar::all(-1),
 						vector<char>(), DrawMatchesFlags::DRAW_RICH_KEYPOINTS  );
 
-		  //-- Localize the object
-					std::vector<Point2f> scena1;
-					std::vector<Point2f> scene2;
+		  	//-- Localize the object
+			std::vector<Point2f> scena1;
+			std::vector<Point2f> scene2;
 
-					for( int i = 0; i < good_matches.size(); i++ )
-					{
-		    //-- Get the keypoints from the good matches
-						scena1.push_back( points1[ good_matches[i].queryIdx ].pt );
-						scene2.push_back( points2[ good_matches[i].trainIdx ].pt );
-					}
+			for( int i = 0; i < good_matches.size(); i++ )
+			{
+		    	//Cogemos los puntos para la para la imagen1 y la imagen2
+				scena1.push_back( points1[ good_matches[i].queryIdx ].pt );
+				scene2.push_back( points2[ good_matches[i].trainIdx ].pt );
+			}
 
-				try{
-					Mat H = findHomography( scena1, scene2, CV_RANSAC );
+			try{
+				//Aplicamos ransac, quedandonos con los inliers
+				Mat H = findHomography( scena1, scene2, CV_RANSAC );
 				
-		  //-- Get the corners from the image_1 ( the object to be "detected" )
-					std::vector<Point2f> obj_corners(4);
-					obj_corners[0] = cvPoint(0,0); obj_corners[1] = cvPoint( src_gray1.cols, 0 );
-					obj_corners[2] = cvPoint( src_gray1.cols, src_gray1.rows ); obj_corners[3] = cvPoint( 0, src_gray1.rows );
-					std::vector<Point2f> scene_corners(4);
+				//Cogemos los puntos de la escena 1 (la escena a detectar)
+				//con la que posteriormente se hara coincidir la segunda imagen
+				std::vector<Point2f> obj_corners(4);
+				obj_corners[0] = cvPoint(0,0); obj_corners[1] = cvPoint( src_gray1.cols, 0 );
+				obj_corners[2] = cvPoint( src_gray1.cols, src_gray1.rows ); obj_corners[3] = cvPoint( 0, src_gray1.rows );
+				std::vector<Point2f> scene_corners(4);
 
-					perspectiveTransform( obj_corners, scene_corners, H);
+				//Calculamos la transformacion de una con la otra
+				perspectiveTransform( obj_corners, scene_corners, H);
 
-		  //-- Draw lines between the corners (the mapped object in the scene - image_2 )
-					line( img_matches, scene_corners[0] + Point2f( src_gray1.cols, 0), scene_corners[1] + Point2f( src_gray1.cols, 0), Scalar(0, 255, 0), 4 );
-					line( img_matches, scene_corners[1] + Point2f( src_gray1.cols, 0), scene_corners[2] + Point2f( src_gray1.cols, 0), Scalar( 0, 255, 0), 4 );
-					line( img_matches, scene_corners[2] + Point2f( src_gray1.cols, 0), scene_corners[3] + Point2f( src_gray1.cols, 0), Scalar( 0, 255, 0), 4 );
-					line( img_matches, scene_corners[3] + Point2f( src_gray1.cols, 0), scene_corners[0] + Point2f( src_gray1.cols, 0), Scalar( 0, 255, 0), 4 );
+	  			//Pintamos lineas de la imagen 2 transformada con la imagen 1 
+				line( img_matches, scene_corners[0] + Point2f( src_gray1.cols, 0), scene_corners[1] + Point2f( src_gray1.cols, 0), Scalar(0, 255, 0), 4 );
+				line( img_matches, scene_corners[1] + Point2f( src_gray1.cols, 0), scene_corners[2] + Point2f( src_gray1.cols, 0), Scalar( 0, 255, 0), 4 );
+				line( img_matches, scene_corners[2] + Point2f( src_gray1.cols, 0), scene_corners[3] + Point2f( src_gray1.cols, 0), Scalar( 0, 255, 0), 4 );
+				line( img_matches, scene_corners[3] + Point2f( src_gray1.cols, 0), scene_corners[0] + Point2f( src_gray1.cols, 0), Scalar( 0, 255, 0), 4 );
 
-		  //-- Show detected matches
-					imshow( "Good Matches & Object detection", img_matches );
-					const std::vector<Point2f> points_ant_transformed(points1.size());
-					std::vector<Point2f> keypoints_ant_vector(points1.size());
-					cv::KeyPoint::convert(points1,keypoints_ant_vector);
+	  			//-- Pintamos los matches y el objeto detectado
+				imshow( "Good Matches & Object detection", img_matches );
+				const std::vector<Point2f> points_ant_transformed(points1.size());
+				std::vector<Point2f> keypoints_ant_vector(points1.size());
+				cv::KeyPoint::convert(points1,keypoints_ant_vector);
 
-		//transformamos los puntos de la imagen anterior
-					perspectiveTransform( keypoints_ant_vector, points_ant_transformed, H);
+				//transformamos los puntos de la imagen anterior
+				perspectiveTransform( keypoints_ant_vector, points_ant_transformed, H);
 
-		//creamos una copia de la imagen actual que usaremos para dibujar
-					Mat transformed_image;
-					cvtColor(src_gray1, transformed_image, CV_GRAY2BGR);
+				//creamos una copia de la imagen actual que usaremos para dibujar
+				Mat transformed_image;
+				cvtColor(src_gray1, transformed_image, CV_GRAY2BGR);
 
-		//los que esten mas lejos que este parametro se consideran outliers (o que la transformacion está mal calculada)
-		//este valor es orientativo, podeis cambiarlo y ajustarlo a los valores
-					float distance_threshold=10.0; 
-					int contdrawbuenos=0;
-					int contdrawmalos=0;
-					for ( int i =0;i<good_matches.size();i++)
-					{
-						int ind        = good_matches.at(i).trainIdx ;
-						int ind_Ant    = good_matches.at(i).queryIdx;
-
-						cv::Point2f p=        points2.at(ind).pt;
-						cv::Point2f p_ant=    points_ant_transformed[ind_Ant];
-
-					    circle( transformed_image, p_ant, 5, Scalar(255,0,0), 2, 8, 0 ); //ant blue
-					    circle( transformed_image, p, 5, Scalar(0,255,255), 2, 8, 0 ); //current yellow
-
-					    Point pointdiff = p - points_ant_transformed[ind_Ant];
-					    float distance_of_points=cv::sqrt(pointdiff.x*pointdiff.x + pointdiff.y*pointdiff.y);
-
-					    if(distance_of_points < distance_threshold){ // los good matches se pintan con un circulo verde mas grand
-					    	contdrawbuenos++;
-					        circle( transformed_image, p, 9, Scalar(0,255,0), 2, 8, 0 ); //current red
-					    }
-					    else{
-					    	contdrawmalos++;
-					    	line(transformed_image,p,p_ant,Scalar(0, 0, 255),1,CV_AA);
-					    }
-					}
-
-					imshow( "transformed", transformed_image );
-					imwrite("~/ejemplowrite.png",transformed_image );
-
-					//cv::Mat result;
-					warpPerspective(src_gray1,result,H,cv::Size(src_gray1.cols+src_gray2.cols,src_gray1.rows));
-					cv::Mat half(result,cv::Rect(0,0,src_gray2.cols,src_gray2.rows));
-					src_gray2.copyTo(half);
-					imshow( "Easy Merge Result", result );
-					img2_exist = false;
-					img1 = img_aux;
-
-					cv::waitKey(3);
-				}
-				catch(cv::Exception &e)
+				//los que esten mas lejos que este parametro se consideran outliers (o que la transformacion está mal calculada)
+				float distance_threshold=10.0; 
+				int contdrawbuenos=0;
+				int contdrawmalos=0;
+				//para ello recorremos los good matches
+				for ( int i =0;i<good_matches.size();i++)
 				{
-					ROS_ERROR("Excepction: %s\nSkipping frame...", e.what());
-					img2_exist = false;
-					cv::waitKey(3);
+					int ind        = good_matches.at(i).trainIdx ;
+					int ind_Ant    = good_matches.at(i).queryIdx;
+
+					cv::Point2f p=        points2.at(ind).pt;
+					cv::Point2f p_ant=    points_ant_transformed[ind_Ant];
+
+				    circle( transformed_image, p_ant, 5, Scalar(255,0,0), 2, 8, 0 ); //ant blue
+				    circle( transformed_image, p, 5, Scalar(0,255,255), 2, 8, 0 ); //current yellow
+
+				    Point pointdiff = p - points_ant_transformed[ind_Ant];
+				    float distance_of_points=cv::sqrt(pointdiff.x*pointdiff.x + pointdiff.y*pointdiff.y);
+
+				    if(distance_of_points < distance_threshold){ // los good matches se pintan con un circulo verde mas grand
+				    	contdrawbuenos++;
+				        circle( transformed_image, p, 9, Scalar(0,255,0), 2, 8, 0 ); //current red
+				    }
+				    else{
+				    	contdrawmalos++;
+				    	line(transformed_image,p,p_ant,Scalar(0, 0, 255),1,CV_AA);
+				    }
 				}
+				//mostramos la imagen transformada con los puntos buenos y los malos
+				imshow( "transformed", transformed_image );
+				imwrite("~/ejemplowrite.png",transformed_image );
+
+				//
+				warpPerspective(src_gray1,result,H,cv::Size(src_gray1.cols+src_gray2.cols,src_gray1.rows));
+				cv::Mat half(result,cv::Rect(0,0,src_gray2.cols,src_gray2.rows));
+				src_gray2.copyTo(half);
+				//mostramos la imagen resultado de la primera y la transformacion con 
+				//respecto a la segunda
+				imshow( "Easy Merge Result", result );
+				img2_exist = false;
+				//la imagen 2 pasa a ser la imagen 1
+				img1 = img_aux;
+
+				cv::waitKey(3);
+			}
+			catch(cv::Exception &e) //si ocurre alguna excepcion pasamos del frame
+			{
+				ROS_ERROR("Excepction: %s\nSkipping frame...", e.what());
+				img2_exist = false;
+				cv::waitKey(3);
+			}
 		}
 	}
 };
