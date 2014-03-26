@@ -9,6 +9,8 @@
 #include "opencv2/core/core.hpp"
 #include "opencv2/calib3d/calib3d.hpp"
 #include "opencv2/nonfree/nonfree.hpp"
+#include "stdlib.h"
+#include "stdio.h"
 
 using namespace cv;
 using namespace std;
@@ -90,11 +92,11 @@ class Prac1 {
 
 			//The threshold
 			//Cuanto mayor, mas esquina seran
-			int minHessian = 400;
+			int minHessian = 200;
 
 			//Declaramos el detector
-			SurfFeatureDetector detector( minHessian );
-	   	//SiftFeatureDetector detector;
+			//SurfFeatureDetector detector( minHessian );
+	   	SiftFeatureDetector detector;
 	   	//FastFeatureDetector detector;
 	   	//GoodFeaturesToTrackDetector detector;
 	   	//MserFeatureDetector detector;
@@ -112,9 +114,9 @@ class Prac1 {
 	    /*Extraer descriptores*/
 			Mat descriptors_1, descriptors_2;
 			//En comentarios estan todos los posibles descriptores
-	    //SiftDescriptorExtractor extractor;
+	    SiftDescriptorExtractor extractor;
 			//Declaramos el extractor de descriptores
-			SurfDescriptorExtractor extractor;
+			//SurfDescriptorExtractor extractor;
 	    //OrbDescriptorExtractor extractor;
 	    //CalonderDescriptorExtractor extractor;
 	    //OpponentColorDescriptorExtractor extractor;
@@ -128,10 +130,10 @@ class Prac1 {
 			vector<vector<DMatch> > matches;
 	  	/* Distintos tipos de funciones de matchings: BruteForce (it uses L2 ), BruteForce-L1, BruteForce-Hamming, BruteForce-Hamming(2), FlannBased */
 	  	//Ptr<DescriptorMatcher> descriptorMatcher = DescriptorMatcher::create( "FlannBased" );
-	  	//FlannBasedMatcher descriptorMatcher;
+	  	FlannBasedMatcher descriptorMatcher;
 	  	//Param: NORM_L1, NORM_L2, NORM_HAMMING, NORM_HAMMING2
 			//al parecer con NORM_L1 es con el que mejor funciona el surf
-			BFMatcher descriptorMatcher(NORM_L1,false);
+			//BFMatcher descriptorMatcher(NORM_L1,false);
 			//Capturamos las dos relaciones mas fuertes de 1 punto (sera con otro punto cada una)
 			descriptorMatcher.knnMatch( descriptors_1, descriptors_2, matches, 2);
 
@@ -207,6 +209,10 @@ class Prac1 {
 				line( img_matches, scene_corners[3] + Point2f( src_gray1.cols, 0), scene_corners[0] + Point2f( src_gray1.cols, 0), Scalar( 0, 255, 0), 4 );
 
 	  			//-- Pintamos los matches y el objeto detectado
+	  			std::string str1 = "/home/pablovm1990/GoodMatches1-";
+				std::string str2 = "" + msg->header.seq;
+				std::string str3 = ".png";
+				imwrite(str1+str2+str3,img_matches);
 				imshow( "Good Matches & Object detection", img_matches );
 				const std::vector<Point2f> points_ant_transformed(points1.size());
 				std::vector<Point2f> keypoints_ant_vector(points1.size());
@@ -249,7 +255,10 @@ class Prac1 {
 				}
 				//mostramos la imagen transformada con los puntos buenos y los malos
 				imshow( "transformed", transformed_image );
-				imwrite("~/ejemplowrite.png",transformed_image );
+				str1 = "/home/pablovm1990/rosbag1-";
+				str2 = "" + msg->header.seq;
+				str3 = ".png";
+				imwrite(str1+str2+str3,transformed_image );
 
 				//
 				warpPerspective(src_gray1,result,H,cv::Size(src_gray1.cols+src_gray2.cols,src_gray1.rows));
@@ -257,6 +266,11 @@ class Prac1 {
 				src_gray2.copyTo(half);
 				//mostramos la imagen resultado de la primera y la transformacion con 
 				//respecto a la segunda
+
+				str1 = "/home/pablovm1990/EasyMergeResult1-";
+				str2 = "" + msg->header.seq;
+				str3 = ".png";
+				imwrite(str1+str2+str3,result );
 				imshow( "Easy Merge Result", result );
 				img2_exist = false;
 				//la imagen 2 pasa a ser la imagen 1
