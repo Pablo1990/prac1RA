@@ -96,9 +96,10 @@ class Prac1 {
 
 			//Declaramos el detector
 			//SurfFeatureDetector detector( minHessian );
-	   	SiftFeatureDetector detector;
+			//SurfFeatureDetector detector;
+	   	//SiftFeatureDetector detector;
 	   	//FastFeatureDetector detector;
-	   	//GoodFeaturesToTrackDetector detector;
+	   	GoodFeaturesToTrackDetector detector;
 	   	//MserFeatureDetector detector;
 	   	//StarFeatureDetector detector;
 	   	//DenseFeatureDetector detector;
@@ -118,8 +119,7 @@ class Prac1 {
 			//Declaramos el extractor de descriptores
 			//SurfDescriptorExtractor extractor;
 	    //OrbDescriptorExtractor extractor;
-	    //CalonderDescriptorExtractor extractor;
-	    //OpponentColorDescriptorExtractor extractor;
+			//entradas: num bytes of the descriptor
 	    //BriefDescriptorExtractor extractor;
 			//a partir de los puntos, conseguimos los descriptores
 			extractor.compute( src_gray1, points1, descriptors_1 );
@@ -134,6 +134,7 @@ class Prac1 {
 	  	//Param: NORM_L1, NORM_L2, NORM_HAMMING, NORM_HAMMING2
 			//al parecer con NORM_L1 es con el que mejor funciona el surf
 			//BFMatcher descriptorMatcher(NORM_L1,false);
+			//BFMatcher descriptorMatcher;
 			//Capturamos las dos relaciones mas fuertes de 1 punto (sera con otro punto cada una)
 			descriptorMatcher.knnMatch( descriptors_1, descriptors_2, matches, 2);
 
@@ -209,9 +210,12 @@ class Prac1 {
 				line( img_matches, scene_corners[3] + Point2f( src_gray1.cols, 0), scene_corners[0] + Point2f( src_gray1.cols, 0), Scalar( 0, 255, 0), 4 );
 
 	  			//-- Pintamos los matches y el objeto detectado
-	  			std::string str1 = "/home/pablovm1990/GoodMatches1-";
-				std::string str2 = "" + msg->header.seq;
-				std::string str3 = ".png";
+	  			std::string str1 = "/home/pablovm1990/exp/GoodMatches1-";
+				std::string str2 = "";
+				ostringstream convert;   // stream used for the conversion
+				convert << msg->header.seq;      // insert the textual representation of 'Number' in the characters in the stream
+				str2 = convert.str();
+				std::string str3 = ".jpg";
 				imwrite(str1+str2+str3,img_matches);
 				imshow( "Good Matches & Object detection", img_matches );
 				const std::vector<Point2f> points_ant_transformed(points1.size());
@@ -255,9 +259,12 @@ class Prac1 {
 				}
 				//mostramos la imagen transformada con los puntos buenos y los malos
 				imshow( "transformed", transformed_image );
-				str1 = "/home/pablovm1990/rosbag1-";
-				str2 = "" + msg->header.seq;
-				str3 = ".png";
+				str1 = "/home/pablovm1990/exp/rosbag1-";
+				str2 = "";
+				ostringstream convert2;   // stream used for the conversion
+				convert2 << msg->header.seq;      // insert the textual representation of 'Number' in the characters in the stream
+				str2 = convert2.str();
+				str3 = ".jpg";
 				imwrite(str1+str2+str3,transformed_image );
 
 				//
@@ -267,9 +274,12 @@ class Prac1 {
 				//mostramos la imagen resultado de la primera y la transformacion con 
 				//respecto a la segunda
 
-				str1 = "/home/pablovm1990/EasyMergeResult1-";
-				str2 = "" + msg->header.seq;
-				str3 = ".png";
+				str1 = "/home/pablovm1990/exp/EasyMergeResult1-";
+				str2 = "";
+				ostringstream convert3;   // stream used for the conversion
+				convert3 << msg->header.seq;      // insert the textual representation of 'Number' in the characters in the stream
+				str2 = convert3.str();
+				str3 = ".jpg";
 				imwrite(str1+str2+str3,result );
 				imshow( "Easy Merge Result", result );
 				img2_exist = false;
